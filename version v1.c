@@ -22,7 +22,7 @@ données du réseau */
 void construire_message(char *message, char motif, int lg);
 void afficher_message(char *message, int lg);
 void sourceudp (int numport,char* host,int lg,char motif, int nb_message);
-void puitudp(int numport,char* host,int lg,char motif);
+void puitudp(int numport,char* host,int lg,char motif,int nb_message);
 //void sourcetcp();
 //void puittcp();
 
@@ -53,6 +53,7 @@ void main (int argc, char **argv)
 			break;
 		case 'u':
 			u=1;
+			break; 
 		case 'n':
 			nb_message = atoi(optarg);
 			break;
@@ -69,34 +70,39 @@ void main (int argc, char **argv)
 		exit(1) ;
 	}
 
-	if (source == 1){
-		printf("on est dans la source\n");
-		if (u==1) {
-			sourceudp(atoi(argv[argc-1]),argv[argc-2],30,'a',nb_message);
-		}
-	}
-	if (source == 0){
-		printf("on est dans le puits\n");
-		if (u==1) {
-			puitudp(atoi(argv[argc-1]),argv[argc-2],30,'a');
-		}
-	}
 	if (nb_message != -1) {
 		if (source == 1)
 			printf("nb de tampons à envoyer : %d\n", nb_message);
-		else
+		else 
 			printf("nb de tampons à recevoir : %d\n", nb_message);
 	} else {
 		if (source == 1) {
 			nb_message = 10 ;
 			printf("nb de tampons à envoyer = 10 par défaut\n");
 		} else
-		printf("nb de tampons à envoyer = infini\n");
+		printf("nb de tampons à recevoir = infini\n");
 
+	}
+	if (source == 1){
+		printf("on est dans la source\n");
+		if (u==1) {
+			int port=atoi(argv[argc-1]);
+			char * host=argv[argc-2]; 
+			sourceudp(port,host,30,'a',nb_message);
+		}
+	}
+	if (source == 0){
+		printf("on est dans le puits\n");
+		if (u==1) {
+			int port=atoi(argv[argc-1]);
+			char * host=argv[argc-2]; 
+			puitudp(port,host,30,'a',nb_message);
+		}
 	}
 } 
 
 void sourceudp (int numport,char* host,int lg,char motif, int nb_message){
+	
 	int sock;
 	/* Création de socket */
 	if ((sock=socket(AF_INET,SOCK_DGRAM,0))==-1){
@@ -107,27 +113,31 @@ void sourceudp (int numport,char* host,int lg,char motif, int nb_message){
 	struct hostent *hp;
 	struct sockaddr_in adr_distant; // Réservation
 
+	
 
-	memset((char*)& adr_distant,0,sizeof(adr_distant)); /* reset */
+	memset((char*)&adr_distant,0,sizeof(adr_distant)); /* reset */
 	adr_distant.sin_family = AF_INET; 
-	adr_distant.sin_port = numport;
+	adr_distant.sin_port = htons(numport);
 
 	if((hp=gethostbyname(host))== NULL){
 		printf("erreur gethostbyname\n");
 		exit(1);
 	}
-
+	
 	memcpy((char*)&(adr_distant.sin_addr.s_addr),
 		hp->h_addr,
 		hp->h_length);
 	
-	char* msg = malloc(lg*sizeof(char));
-	construire_message(msg,motif,lg);
-	for (int i=0; i<=nb_message; i++){
 	
-		sendto(sock,msg,sizeof(msg),0,(struct sockaddr *)hp->h_addr,hp->h_length);
+	char* msg = malloc(lg*sizeof(char));
+
+	for (int i=0; i<nb_message; i++){
+		construire_message(msg,motif+i,lg);
+		sendto(sock,msg,lg,0,(struct sockaddr *)&adr_distant,sizeof(adr_distant));
+		afficher_message(msg,lg); 
 	}
 	free(msg);
+	close (sock); 
 
 }
 
@@ -141,33 +151,46 @@ void afficher_message(char *message, int lg) {
 	for (i=0;i<lg;i++) printf("%c", message[i]); printf("\n");
 }
 
-void puitudp(int numport,char* host,int lg,char motif){
-	int sock;
+void puitudp(int numport,char* host,int lg,char motif,int nb_message){
+	int sock2;
 	/* Création de socket */
-	if ((sock=socket(AF_INET,SOCK_DGRAM,0))==-1){
+		if ((sock2=socket(AF_INET,SOCK_DGRAM,0))==-1){
 		printf("echec de creation de socket");
 		exit(1);
 	}
 	
 	struct sockaddr_in adr_local; // Réservation
 
-	memset((char*)& adr_local,0,sizeof(adr_local)); /* reset */
+	memset((char*)&adr_local,0,sizeof(adr_local)); /* reset */
 	adr_local.sin_family = AF_INET; 
-	adr_local.sin_port = numport;
+	adr_local.sin_port = htons(numport);
 	adr_local.sin_addr.s_addr = INADDR_ANY;
 
-	if (bind(sock,(struct sockaddr*)&adr_local,sizeof(adr_local))==-1){
+	if (bind(sock2,(struct sockaddr*)&adr_local,sizeof(struct sockaddr))==-1){
 		printf("echec du bind\n");
+		perror("bind");
 		exit(1);
 	}
+	
 	char * msg = malloc(lg*sizeof(char));
 	struct sockaddr * adr_distant = malloc(sizeof(adr_local));
 	int *  lg_adr= malloc(sizeof(int)) ;
-
-	recvfrom(sock,msg,lg,0,adr_distant,lg_adr);
-	afficher_message(msg,lg);
+	if (nb_message==-1){
+		while(1){
+			recvfrom(sock2,msg,lg,0,adr_distant,lg_adr);
+			afficher_message(msg,lg);
+		}
+	}
+	else{
+			for (int i=0;i<=nb_message;i++){
+				recvfrom(sock2,msg,lg,0,adr_distant,lg_adr);
+				afficher_message(msg,lg);
+			}
+		}
+	
 	free(msg);
 	free(adr_distant);
 	free(lg_adr);	
+	close(sock2);
 
 }
