@@ -22,10 +22,9 @@ données du réseau */
 void construire_message(char *message, char motif, int lg);
 void afficher_message(char *message, int lg);
 void sourceudp (int numport,char* host,int lg,char motif, int nb_message);
-void puitudp(int numport,char* host,int lg,char motif, int nb_message);
-int puitudp();
-int sourcetcp();
-int puittcp();
+void puitudp(int numport,char* host,int lg,char motif);
+//void sourcetcp();
+//void puittcp();
 
 void main (int argc, char **argv)
 {
@@ -78,6 +77,9 @@ void main (int argc, char **argv)
 	}
 	if (source == 0){
 		printf("on est dans le puits\n");
+		if (u==1) {
+			puitudp(atoi(argv[argc-1]),argv[argc-2],30,'a');
+		}
 	}
 	if (nb_message != -1) {
 		if (source == 1)
@@ -139,7 +141,7 @@ void afficher_message(char *message, int lg) {
 	for (i=0;i<lg;i++) printf("%c", message[i]); printf("\n");
 }
 
-void puitudp(int numport,char* host,int lg,char motif, int nb_message){
+void puitudp(int numport,char* host,int lg,char motif){
 	int sock;
 	/* Création de socket */
 	if ((sock=socket(AF_INET,SOCK_DGRAM,0))==-1){
@@ -152,20 +154,20 @@ void puitudp(int numport,char* host,int lg,char motif, int nb_message){
 	memset((char*)& adr_local,0,sizeof(adr_local)); /* reset */
 	adr_local.sin_family = AF_INET; 
 	adr_local.sin_port = numport;
-	adr_local.sin_addr = INADDR_ANY;
+	adr_local.sin_addr.s_addr = INADDR_ANY;
 
 	if (bind(sock,(struct sockaddr*)&adr_local,sizeof(adr_local))==-1){
 		printf("echec du bind\n");
 		exit(1);
 	}
 	char * msg = malloc(lg*sizeof(char));
-	char * adr_distant = malloc(sizeof(adr_local));
-	
-	recvfrom(sock,msg,lg,0,adr_distant,);
+	struct sockaddr * adr_distant = malloc(sizeof(adr_local));
+	int *  lg_adr= malloc(sizeof(int)) ;
 
+	recvfrom(sock,msg,lg,0,adr_distant,lg_adr);
+	afficher_message(msg,lg);
+	free(msg);
+	free(adr_distant);
+	free(lg_adr);	
 
-
-
-
-	
 }
