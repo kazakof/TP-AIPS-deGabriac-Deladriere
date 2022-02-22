@@ -45,11 +45,11 @@ La version v3 de tsock intègre les fonctions de formatage et d'affichage des me
 
 [ ] Le formattage et affichage des messages selon le cahier des charges sont opérationnels
 
-[ ] la prise en compte de l'option -n en émission aussi bien avec UDP et TCP est correcte
+[x] la prise en compte de l'option -n en émission aussi bien avec UDP et TCP est correcte
 
-[ ] la prise en compte de l'option -n en réception avec UDP est correcte
+[x] la prise en compte de l'option -n en réception avec UDP est correcte
 
-[ ] la prise en compte de l'option -n en réception avec TCP est correcte
+[x] la prise en compte de l'option -n en réception avec TCP est correcte
 
-[ ] la prise en compte de l'option -l est correcte
+[x] la prise en compte de l'option -l est correcte
 
