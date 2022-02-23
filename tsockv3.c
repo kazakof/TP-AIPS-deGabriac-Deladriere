@@ -19,8 +19,8 @@ données du réseau */
 #include <errno.h>
 
 
-void construire_message(char *message, char motif, int lg);
-void afficher_message(char *message, int lg,int s,int i);
+void construire_message(char *message, char motif, int lg,int j);
+void afficher_message(char *message, int lg,int s);
 void sourceudp (int numport,char* host,int lg,int nb_message);
 void puitudp(int numport,int lg,int nb_message);
 void sourcetcp(int numport, char* host,int lg,int nb_message);
@@ -119,15 +119,17 @@ void main (int argc, char **argv)
                 printf("PUITS: lg_msg_reçu:%d, n°port local:%d, nb_messages: %d, TP:UDP\n",lg,port,nb_message);
                 }
 			puitudp(port,lg,nb_message);
+			printf("PUITS : fin\n");
 		}
 		if (u==0){
 			int port=atoi(argv[argc-1]);
             if(nb_message==-1){
-                printf("PUITS: lg_msg_reçu:%d, n°port local:%d, TP:TCP\n",lg,htons(port));
+                printf("PUITS: lg_msg_reçu:%d, n°port local:%d, TP:TCP\n",lg,port);
             }else{
-            printf("PUITS: lg_msg_reçu:%d, n°port local:%d, nb_messages: %d, TP:TCP\n",lg,htons(port),nb_message);
+            printf("PUITS: lg_msg_reçu:%d, n°port local:%d, nb_messages: %d, TP:TCP\n",lg,port,nb_message);
             }
 			puittcp(port,lg,nb_message,nb_message_lire);
+			printf("PUITS : fin\n");
 			
 		}
 	}
@@ -164,24 +166,27 @@ void sourceudp (int numport,char* host,int lg,int nb_message){
 	char* msg = malloc(lg*sizeof(char));
 	char motif='a';
 	for (int i=0; i<nb_message; i++){
-		construire_message(msg,motif+i,lg);
+		construire_message(msg,motif+(i%26),lg,i+1);
 		sendto(sock,msg,lg,0,(struct sockaddr *)&adr_distant,sizeof(adr_distant));
-		afficher_message(msg,lg,1,i+1); 
+		afficher_message(msg,lg,1); 
 	}
 	free(msg);
 	close (sock); 
 
 }
 
-void construire_message(char *message, char motif, int lg) {
+void construire_message(char *message, char motif, int lg,int j) {
 	int i;
-	for (i=0;i<lg;i++) message[i] = motif;}
+	sprintf(message,"%5d",j);//création du champ numero de message sur 5 espaces 
+	for (i=5;i<lg;i++) message[i] = motif;}//remplissage du message avec les caractères
 
-void afficher_message(char *message, int lg,int s,int i) {
+void afficher_message(char *message, int lg,int s) {
+	char num[6];
+	strncpy(num,message,5); //récuperation de l'entête du message contenant le numero
 	if(s==1){
-        printf("SOURCE : Envoi n°%d (%d) [%s]\n",i,lg,message);
+        printf("SOURCE : Envoi n°%s (%d) [%s]\n",num,lg,message);//Affichage au format pour les programmes sources
 	}else{
-        printf("PUITS : Réception n°%d (%d) [%s]\n",i,lg,message);
+        printf("PUITS : Réception n°%s (%d) [%s]\n",num,lg,message);//Affichage au format pour les programmes puits
 	}
 }
 
@@ -210,17 +215,16 @@ void puitudp(int numport,int lg,int nb_message){
 	struct sockaddr * adr_distant = malloc(sizeof(adr_local));
 	int *  lg_adr= malloc(sizeof(int)) ;
 	if (nb_message==-1){
-		int i=1;
+
 		while(1){
 			recvfrom(sock2,msg,lg,0,adr_distant,lg_adr);
-			afficher_message(msg,lg,0,i);
-			i++;
+			afficher_message(msg,lg,0);
 		}
 	}
 	else{
 			for (int i=0;i<nb_message;i++){
 				recvfrom(sock2,msg,lg,0,adr_distant,lg_adr);
-				afficher_message(msg,lg,0,i+1);
+				afficher_message(msg,lg,0);
 			}
 		}
 	
@@ -268,12 +272,13 @@ void sourcetcp(int numport, char* host,int lg,int nb_message){
 	
 	
 	for (int i=0;i<nb_message;i++){
-		construire_message(message,motif+i,lg);
+		construire_message(message,motif+(i%26),lg,i+1);
+		
 		if((lg_message=send(sock,message,lg,0))<0){
 			printf("erreur send\n");
 			exit(1);
 		}
-		afficher_message(message,lg,1,i+1);
+		afficher_message(message,lg,1);
 	}
 
 free(message);
@@ -281,7 +286,6 @@ close(sock);
 }
 
 void puittcp(int numport,int lg, int nb_message,int nb_message_lire){
-	int u=0;
 	int sock,sock_bis;
 	struct sockaddr_in adr_client,adr_local; // Réservation
 	int lg_adr_client=sizeof(adr_client);
@@ -318,14 +322,15 @@ void puittcp(int numport,int lg, int nb_message,int nb_message_lire){
 	
 	if (nb_message_lire==0){ //Cas ou l'utilisateur n'indique pas un nombre précis de message à lire via la commande -n
 		int i=1;
-		do {
-			if((lg_rec=read(sock_bis,message,lg))<0){
+		while((lg_rec=read(sock_bis,message,lg))!=0) {
+			if(lg_rec<0){
 				printf("échec du read\n");
 				exit(1);
 				}
-			afficher_message(message,lg_rec,0,i);
+			afficher_message(message,lg_rec,0);
 			i++;
-		}while (lg_rec!=0);
+			}
+		
 	}else{
 		for(int i=0;i<max;i++){ //Cas ou l'utilisateur impose un nombre de message à lire 
 			if((lg_rec=read(sock_bis,message,lg))<0){
@@ -333,8 +338,8 @@ void puittcp(int numport,int lg, int nb_message,int nb_message_lire){
 				exit(1);
 			}
 			if(lg_rec==0){ //arrêt de l'affichage si toutes les données envoyées ont bien été reçues et que les affichages sont vides
-				break;}
-			afficher_message(message,lg_rec,0,i+1);
+				exit(1);}
+			afficher_message(message,lg_rec,0);
 		}
 	}	
 
