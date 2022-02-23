@@ -43,7 +43,7 @@ La version 2 intègre l’utilisation de TCP pour l’échange des messages. Veu
 
 La version v3 de tsock intègre les fonctions de formatage et d'affichage des messages émis et reçus (selon le cahier des charges) ainsi que la gestion des options restantes : -n  et -l. Si toutes les fonctionnalités additionnelles de la version 3 sont validées par vos tests, vous devez cocher toutes les cases suivantes. Si ce n'est pas le cas, veuillez cocher les seules cases qui correspondent aux étapes validées.  
 
-[ ] Le formattage et affichage des messages selon le cahier des charges sont opérationnels
+[x] Le formattage et affichage des messages selon le cahier des charges sont opérationnels
 
 [x] la prise en compte de l'option -n en émission aussi bien avec UDP et TCP est correcte
 
