@@ -281,7 +281,6 @@ close(sock);
 }
 
 void puittcp(int numport,int lg, int nb_message,int nb_message_lire){
-	int u=0;
 	int sock,sock_bis;
 	struct sockaddr_in adr_client,adr_local; // Réservation
 	int lg_adr_client=sizeof(adr_client);
